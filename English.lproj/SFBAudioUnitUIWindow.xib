@@ -251,7 +251,6 @@
 					<string>presetPath</string>
 				</object>
 				<string key="NSObjectClassName">NSDictionary</string>
-				<bool key="NSEditable">YES</bool>
 				<object class="_NSManagedProxy" key="_NSManagedProxy"/>
 				<bool key="NSAvoidsEmptySelection">YES</bool>
 				<bool key="NSPreservesSelection">YES</bool>
@@ -301,22 +300,6 @@
 						</object>
 					</object>
 					<int key="connectionID">34</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">contentArray: presetsTree</string>
-						<reference key="source" ref="573870734"/>
-						<reference key="destination" ref="513838482"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="573870734"/>
-							<reference key="NSDestination" ref="513838482"/>
-							<string key="NSLabel">contentArray: presetsTree</string>
-							<string key="NSBinding">contentArray</string>
-							<string key="NSKeyPath">presetsTree</string>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">35</int>
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBBindingConnection" key="connection">
@@ -432,6 +415,22 @@
 						<reference key="destination" ref="513838482"/>
 					</object>
 					<int key="connectionID">148</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">contentArray: presetsTree</string>
+						<reference key="source" ref="573870734"/>
+						<reference key="destination" ref="513838482"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="573870734"/>
+							<reference key="NSDestination" ref="513838482"/>
+							<string key="NSLabel">contentArray: presetsTree</string>
+							<string key="NSBinding">contentArray</string>
+							<string key="NSKeyPath">presetsTree</string>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">152</int>
 				</object>
 			</object>
 			<object class="IBMutableOrderedSet" key="objectRecords">
@@ -656,7 +655,7 @@
 				</object>
 			</object>
 			<nil key="sourceID"/>
-			<int key="maxID">148</int>
+			<int key="maxID">152</int>
 		</object>
 		<object class="IBClassDescriber" key="IBDocument.Classes">
 			<object class="NSMutableArray" key="referencedPartialClassDescriptions">
