@@ -355,13 +355,24 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 		return;
 	}
 	
-	NSString *error = nil;
-	NSData *xmlData = [NSPropertyListSerialization dataFromPropertyList:classInfoPlist format:NSPropertyListXMLFormat_v1_0 errorDescription:&error];
+	NSString *errorString = nil;
+	NSData *xmlData = [NSPropertyListSerialization dataFromPropertyList:classInfoPlist format:NSPropertyListXMLFormat_v1_0 errorDescription:&errorString];
 
 	if(nil == xmlData) {
-		NSLog(@"SFBAudioUnitUI: Unable to create property list from AU class info: %@", error);
-		[error release];
+		NSLog(@"SFBAudioUnitUI: Unable to create property list from AU class info: %@", errorString);
+		[errorString release];
 		return;
+	}
+	
+	// Create the directory structure if required
+	NSString *presetPath = [[presetURL path] stringByDeletingLastPathComponent];
+	if(![[NSFileManager defaultManager] fileExistsAtPath:presetPath]) {
+		NSError *error = nil;
+		BOOL dirStructureCreated = [[NSFileManager defaultManager] createDirectoryAtPath:presetPath withIntermediateDirectories:YES attributes:nil error:&error];
+		if(!dirStructureCreated) {
+			NSLog(@"SFBAudioUnitUI: Unable to create directories for %@", presetURL);
+			return;
+		}
 	}
 	
 	BOOL presetSaved = [xmlData writeToURL:presetURL atomically:YES];
@@ -574,10 +585,8 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 		
 		FSRef presetFolderRef;
 		OSErr err = FSFindFolder(domain, kAudioPresetsFolderType, kDontCreateFolder, &presetFolderRef);
-		if(noErr != err) {
+		if(noErr != err)
 			NSLog(@"SFBAudioUnitUI: FSFindFolder(kAudioPresetsFolderType) failed: %i", err);
-			return;
-		}
 		
 		NSURL *presetsFolderURL = (NSURL *)CFURLCreateFromFSRef(kCFAllocatorSystemDefault, &presetFolderRef);
 		if(nil == presetsFolderURL) {
@@ -592,6 +601,8 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 		[self saveCustomPresetToURL:[NSURL fileURLWithPath:auPresetPath] presetName:presetName];
 		
 		[self scanPresets];
+		
+		[presetsFolderURL release];
 	}
 }
 
