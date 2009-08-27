@@ -21,7 +21,7 @@
 		}
 		
 		// The graph will look like:
-		// Generator -> Peak Limiter -> Effects -> Output
+		// Generator -> Peak Limiter -> Output
 		ComponentDescription desc;
 		
 		// Set up the generator node
@@ -78,13 +78,6 @@
 			[self release];
 			return nil;
 		}
-		
-		err = AUGraphStart(_graph);
-		if(noErr != err) {
-			[self release];
-			return nil;
-		}
-		
 
 		// Get the node info for the UI
 		err = AUGraphNodeInfo(_graph, limiter, NULL, &_au);
@@ -104,6 +97,8 @@
 //		return err;
 	
 	err = DisposeAUGraph(_graph);
+//	if(noErr != err)
+//		return err;
 	
 	_graph = NULL;
 	_au = NULL;
