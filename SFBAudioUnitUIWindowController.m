@@ -395,7 +395,7 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	if(-1 == [presetNumber intValue])
 		[self loadCustomPresetFromURL:[NSURL fileURLWithPath:presetPath]];
 	else
-		[self loadFactoryPresetNumber:presetNumber presetName:presetName];	
+		[self loadFactoryPresetNumber:presetNumber presetName:presetName];
 }
 
 #pragma mark NSToolbar Delegate Methods
