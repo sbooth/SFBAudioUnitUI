@@ -663,7 +663,7 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	[self willChangeValueForKey:@"presetsTree"];
 
 	[_presetsTree removeAllObjects];
-	
+
 	NSMutableArray *factoryPresetsArray = [NSMutableArray array];
 	
 	if(noErr == err) {
@@ -676,6 +676,10 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 
 			[presetName release];
 		}
+		
+		NSSortDescriptor *sortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"presetName" ascending:YES];
+		[factoryPresetsArray sortUsingDescriptors:[NSArray arrayWithObject:sortDescriptor]];
+		[sortDescriptor release];
 	}
 	else
 		NSLog(@"SFBAudioUnitUI: AudioUnitGetProperty(kAudioUnitProperty_FactoryPresets) failed: %i", err);	
@@ -690,9 +694,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	NSArray *userPresetsArray = [self userPresets];
 	if([userPresetsArray count])
 		[_presetsTree addObject:[NSDictionary dictionaryWithObjectsAndKeys:userPresetsArray, @"children", NSLocalizedStringFromTable(@"User", @"AudioUnitUI", @""), @"presetName", [NSNull null], @"presetNumber", [NSNull null], @"presetPath", nil]];
-	
+
 	[self didChangeValueForKey:@"presetsTree"];
-	
+
 	[factoryPresets release];
 }
 
@@ -742,6 +746,10 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	
 	[presetsFolderURL release];
 	
+	NSSortDescriptor *sortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"presetName" ascending:YES];
+	[result sortUsingDescriptors:[NSArray arrayWithObject:sortDescriptor]];
+	[sortDescriptor release];
+
 	return [result autorelease];
 }
 
