@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		322E73981044EFCB00DA0AC6 /* SFBAudioUnitUIWindowController.h in Headers */ = {isa = PBXBuildFile; fileRef = 322E73941044EFCB00DA0AC6 /* SFBAudioUnitUIWindowController.h */; };
+		322E73981044EFCB00DA0AC6 /* SFBAudioUnitUIWindowController.h in Headers */ = {isa = PBXBuildFile; fileRef = 322E73941044EFCB00DA0AC6 /* SFBAudioUnitUIWindowController.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		322E73991044EFCB00DA0AC6 /* SFBAudioUnitUIWindowController.m in Sources */ = {isa = PBXBuildFile; fileRef = 322E73951044EFCB00DA0AC6 /* SFBAudioUnitUIWindowController.m */; };
 		322E739A1044EFCB00DA0AC6 /* SFBAudioUnitUISaveAUPresetSheet.h in Headers */ = {isa = PBXBuildFile; fileRef = 322E73961044EFCB00DA0AC6 /* SFBAudioUnitUISaveAUPresetSheet.h */; };
 		322E739B1044EFCB00DA0AC6 /* SFBAudioUnitUISaveAUPresetSheet.m in Sources */ = {isa = PBXBuildFile; fileRef = 322E73971044EFCB00DA0AC6 /* SFBAudioUnitUISaveAUPresetSheet.m */; };
@@ -255,6 +255,9 @@
 /* Begin PBXProject section */
 		0867D690FE84028FC02AAC07 /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+				ORGANIZATIONNAME = sbooth.org;
+			};
 			buildConfigurationList = 1DEB91B108733DA50010E9CD /* Build configuration list for PBXProject "SFBAudioUnitUI" */;
 			compatibilityVersion = "Xcode 3.1";
 			hasScannedForEncodings = 1;
@@ -405,6 +408,7 @@
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -418,6 +422,7 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				PREBINDING = NO;
