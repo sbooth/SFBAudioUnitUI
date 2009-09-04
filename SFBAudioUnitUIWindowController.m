@@ -54,6 +54,11 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 					  UInt64					inEventHostTime,
 					  Float32					inParameterValue)
 {
+
+#pragma unused(inObject)
+#pragma unused(inEventHostTime)
+#pragma unused(inParameterValue)
+
 	SFBAudioUnitUIWindowController *myself = (SFBAudioUnitUIWindowController *)inCallbackRefCon;
 	
 	if(kAudioUnitEvent_PropertyChange == inEvent->mEventType) {
@@ -75,8 +80,8 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 											 self,
 											 CFRunLoopGetCurrent(),
 											 kCFRunLoopDefaultMode,
-											 0.1,
-											 0.1,
+											 0.1f,
+											 0.1f,
 											 &_auEventListener);
 		if(noErr != err) {
 			[self release];
@@ -189,6 +194,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 
 - (IBAction) savePreset:(id)sender
 {
+
+#pragma unused(sender)
+
 	SFBAudioUnitUISaveAUPresetSheet *saveAUPresetSheet = [[SFBAudioUnitUISaveAUPresetSheet alloc] init];
 	
 	[saveAUPresetSheet setPresetName:_auPresentPresetName];
@@ -202,6 +210,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 
 - (IBAction) toggleBypassEffect:(id)sender
 {
+
+#pragma unused(sender)
+
 	UInt32 bypassEffect = NO;
 	UInt32 dataSize = sizeof(bypassEffect);
 	
@@ -230,6 +241,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 
 - (IBAction) savePresetToFile:(id)sender
 {
+
+#pragma unused(sender)
+
 	NSSavePanel *savePanel = [NSSavePanel savePanel];
 	
 	[savePanel setAllowedFileTypes:[NSArray arrayWithObject:@"aupreset"]];
@@ -244,6 +258,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 
 - (IBAction) loadPresetFromFile:(id)sender
 {
+
+#pragma unused(sender)
+
 	NSOpenPanel *openPanel = [NSOpenPanel openPanel];
 	
 	[openPanel setCanChooseFiles:YES];
@@ -402,6 +419,10 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 
 - (NSToolbarItem *) toolbar:(NSToolbar *)toolbar itemForItemIdentifier:(NSString *)itemIdentifier willBeInsertedIntoToolbar:(BOOL)flag 
 {
+
+#pragma unused(toolbar)
+#pragma unused(flag)
+
     NSToolbarItem *toolbarItem = nil;
     
 	NSBundle *myBundle = [NSBundle bundleForClass:[self class]];
@@ -482,6 +503,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 
 - (NSArray *) toolbarDefaultItemIdentifiers:(NSToolbar *)toolbar 
 {
+
+#pragma unused(toolbar)
+
     return [NSArray arrayWithObjects:
 			PresetDrawerToolbarItemIdentifier, 
 			SavePresetToolbarItemIdentifier, 
@@ -495,6 +519,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 
 - (NSArray *) toolbarAllowedItemIdentifiers:(NSToolbar *) toolbar 
 {
+
+#pragma unused(toolbar)
+
     return [NSArray arrayWithObjects:
 			PresetDrawerToolbarItemIdentifier, 
 			SavePresetToolbarItemIdentifier, 
@@ -510,6 +537,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 
 - (NSArray *) toolbarSelectableItemIdentifiers:(NSToolbar *)toolbar
 {
+
+#pragma unused(toolbar)
+
     return [NSArray arrayWithObject:BypassEffectToolbarItemIdentifier];
 }
 
@@ -554,6 +584,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 
 - (void) savePresetToFileSavePanelDidEnd:(NSSavePanel *)panel returnCode:(int)returnCode contextInfo:(void *)contextInfo
 {
+
+#pragma unused(contextInfo)
+
 	if(NSCancelButton == returnCode)
 		return;
 
@@ -562,6 +595,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 
 - (void) loadPresetFromFileOpenPanelDidEnd:(NSOpenPanel *)panel returnCode:(int)returnCode contextInfo:(void *)contextInfo
 {
+
+#pragma unused(contextInfo)
+
 	if(NSCancelButton == returnCode)
 		return;
 	
@@ -588,21 +624,21 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 		if(noErr != err)
 			NSLog(@"SFBAudioUnitUI: FSFindFolder(kAudioPresetsFolderType) failed: %i", err);
 		
-		NSURL *presetsFolderURL = (NSURL *)CFURLCreateFromFSRef(kCFAllocatorSystemDefault, &presetFolderRef);
+		CFURLRef presetsFolderURL = CFURLCreateFromFSRef(kCFAllocatorSystemDefault, &presetFolderRef);
 		if(nil == presetsFolderURL) {
 			NSLog(@"SFBAudioUnitUI: CFURLCreateFromFSRef failed");
 			return;
 		}
 		
 		NSString *presetName = [saveAUPresetSheet presetName];
-		NSArray *pathComponents = [NSArray arrayWithObjects:[presetsFolderURL path], _auManufacturer, _auName, presetName, nil];
+		NSArray *pathComponents = [NSArray arrayWithObjects:[(NSURL *)presetsFolderURL path], _auManufacturer, _auName, presetName, nil];
 		NSString *auPresetPath = [[[NSString pathWithComponents:pathComponents] stringByAppendingPathExtension:@"aupreset"] stringByStandardizingPath];
 		
 		[self saveCustomPresetToURL:[NSURL fileURLWithPath:auPresetPath] presetName:presetName];
 		
 		[self scanPresets];
 		
-		[presetsFolderURL release];
+		CFRelease(presetsFolderURL), presetsFolderURL = nil;
 	}
 }
 
@@ -626,19 +662,19 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	OSErr err = GetComponentInfo((Component)[self audioUnit], &cd, componentNameHandle, NULL, NULL);
 	if(noErr == err) {
 		_auNameAndManufacturer = (NSString *)CFStringCreateWithPascalString(kCFAllocatorDefault, (ConstStr255Param)(*componentNameHandle), kCFStringEncodingUTF8);
-		unsigned int index = [_auNameAndManufacturer rangeOfString:@":" options:NSLiteralSearch].location;
-		if(NSNotFound != index) {
-			_auManufacturer = [[_auNameAndManufacturer substringToIndex:index] copy];
+		NSUInteger colonIndex = [_auNameAndManufacturer rangeOfString:@":" options:NSLiteralSearch].location;
+		if(NSNotFound != colonIndex) {
+			_auManufacturer = [[_auNameAndManufacturer substringToIndex:colonIndex] copy];
 			
 			// Skip colon
-			++index;
+			++colonIndex;
 			
 			// Skip whitespace
 			NSCharacterSet *whitespaceCharacters = [NSCharacterSet whitespaceCharacterSet];
-			while([whitespaceCharacters characterIsMember:[_auNameAndManufacturer characterAtIndex:index]])
-				++index;
+			while([whitespaceCharacters characterIsMember:[_auNameAndManufacturer characterAtIndex:colonIndex]])
+				++colonIndex;
 			
-			_auName = [[_auNameAndManufacturer substringFromIndex:index] copy];			
+			_auName = [[_auNameAndManufacturer substringFromIndex:colonIndex] copy];			
 		}
 	}
 	else
@@ -719,13 +755,13 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 		return nil;
 	}
 	
-	NSURL *presetsFolderURL = (NSURL *)CFURLCreateFromFSRef(kCFAllocatorSystemDefault, &presetFolderRef);
+	CFURLRef presetsFolderURL = CFURLCreateFromFSRef(kCFAllocatorSystemDefault, &presetFolderRef);
 	if(nil == presetsFolderURL) {
 		NSLog(@"SFBAudioUnitUI: CFURLCreateFromFSRef failed");	
 		return nil;
 	}
 
-	NSArray *pathComponents = [NSArray arrayWithObjects:[presetsFolderURL path], _auManufacturer, _auName, nil];
+	NSArray *pathComponents = [NSArray arrayWithObjects:[(NSURL *)presetsFolderURL path], _auManufacturer, _auName, nil];
 	NSString *auPresetsPath = [[NSString pathWithComponents:pathComponents] stringByStandardizingPath];
 
 	NSDirectoryEnumerator *enumerator = [[NSFileManager defaultManager] enumeratorAtPath:auPresetsPath];
@@ -744,11 +780,10 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 		[result addObject:[NSDictionary dictionaryWithObjectsAndKeys:presetNumber, @"presetNumber", presetName, @"presetName", presetPath, @"presetPath", [NSNull null], @"children", nil]];
 	}
 	
-	[presetsFolderURL release];
+	CFRelease(presetsFolderURL), presetsFolderURL = nil;
 	
-	NSSortDescriptor *sortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"presetName" ascending:YES];
+	NSSortDescriptor *sortDescriptor = [[[NSSortDescriptor alloc] initWithKey:@"presetName" ascending:YES] autorelease];
 	[result sortUsingDescriptors:[NSArray arrayWithObject:sortDescriptor]];
-	[sortDescriptor release];
 
 	return [result autorelease];
 }
@@ -910,10 +945,12 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	// Extract useful data.
 	unsigned	numberOfClasses		= (dataSize - sizeof(CFURLRef)) / sizeof(CFStringRef);
 	NSString	*viewClassName		= (NSString *)(cocoaViewInfo->mCocoaAUViewClass[0]);
-	NSString	*path				= (NSString *)(CFURLCopyPath(cocoaViewInfo->mCocoaAUViewBundleLocation));
-	NSBundle	*viewBundle			= [NSBundle bundleWithPath:[path autorelease]];
+	CFStringRef	path				= CFURLCopyPath(cocoaViewInfo->mCocoaAUViewBundleLocation);
+	NSBundle	*viewBundle			= [NSBundle bundleWithPath:(NSString *)path];
 	Class		viewClass			= [viewBundle classNamed:viewClassName];
 
+	CFRelease(path), path = nil;
+	
 	if([viewClass conformsToProtocol:@protocol(AUCocoaUIBase)]) {
 		id factory = [[[viewClass alloc] init] autorelease];
 		theView = [factory uiViewForAudioUnit:[self audioUnit] withSize:NSZeroSize];

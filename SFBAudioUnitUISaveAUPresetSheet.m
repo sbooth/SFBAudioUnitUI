@@ -34,11 +34,17 @@
 
 - (IBAction) ok:(id)sender
 {
+
+#pragma unused(sender)
+
     [[NSApplication sharedApplication] endSheet:[self sheet] returnCode:NSOKButton];
 }
 
 - (IBAction) cancel:(id)sender
 {
+
+#pragma unused(sender)
+
     [[NSApplication sharedApplication] endSheet:[self sheet] returnCode:NSCancelButton];
 }
 
