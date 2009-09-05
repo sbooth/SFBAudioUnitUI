@@ -112,6 +112,7 @@
 			isa = PBXGroup;
 			children = (
 				08FB77AEFE84172EC02AAC07 /* Classes */,
+				32E6BD6F105246D80092645A /* Demo */,
 				32C88DFF0371C24200C91783 /* Other Sources */,
 				322E748D1044F9B700DA0AC6 /* Images */,
 				089C1665FE841158C02AAC07 /* Resources */,
@@ -146,13 +147,10 @@
 		08FB77AEFE84172EC02AAC07 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
-				322E74391044F3F800DA0AC6 /* main.m */,
 				322E73941044EFCB00DA0AC6 /* SFBAudioUnitUIWindowController.h */,
 				322E73951044EFCB00DA0AC6 /* SFBAudioUnitUIWindowController.m */,
 				322E73961044EFCB00DA0AC6 /* SFBAudioUnitUISaveAUPresetSheet.h */,
 				322E73971044EFCB00DA0AC6 /* SFBAudioUnitUISaveAUPresetSheet.m */,
-				322E74421044F4E400DA0AC6 /* DemoAppDelegate.h */,
-				322E74431044F4E400DA0AC6 /* DemoAppDelegate.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -196,6 +194,16 @@
 				32DBCF5E0370ADEE00C91783 /* SFBAudioUnitUI_Prefix.pch */,
 			);
 			name = "Other Sources";
+			sourceTree = "<group>";
+		};
+		32E6BD6F105246D80092645A /* Demo */ = {
+			isa = PBXGroup;
+			children = (
+				322E74421044F4E400DA0AC6 /* DemoAppDelegate.h */,
+				322E74431044F4E400DA0AC6 /* DemoAppDelegate.m */,
+				322E74391044F3F800DA0AC6 /* main.m */,
+			);
+			name = Demo;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
