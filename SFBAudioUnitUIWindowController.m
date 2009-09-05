@@ -42,6 +42,7 @@ static NSString * const ImportPresetToolbarItemIdentifier				= @"org.sbooth.Audi
 - (void) stopListeningForParameterChangesOnAudioUnit:(AudioUnit)audioUnit;
 - (BOOL) hasCocoaView;
 - (NSView *) getCocoaView;
+- (void) presetDoubleClicked:(id)sender;
 @end
 
 // ========================================
@@ -126,6 +127,11 @@ myAUEventListenerProc(void						*inCallbackRefCon,
     [toolbar setDelegate:self];
 	
     [[self window] setToolbar:[toolbar autorelease]];
+	
+	// Set up the presets outline view
+	[_presetsOutlineView setTarget:self];
+	[_presetsOutlineView setAction:NULL];
+	[_presetsOutlineView setDoubleAction:@selector(presetDoubleClicked:)];
 }
 
 - (AudioUnit) audioUnit
@@ -543,6 +549,46 @@ myAUEventListenerProc(void						*inCallbackRefCon,
     return [NSArray arrayWithObject:BypassEffectToolbarItemIdentifier];
 }
 
+#pragma mark NSOutlineView Data Source Methods
+
+- (id) outlineView:(NSOutlineView *)outlineView child:(NSInteger)index ofItem:(id)item
+{
+	if(nil == item)
+		return [_presetsTree objectAtIndex:index];
+	else
+		return [[item valueForKey:@"children"] objectAtIndex:index];
+}
+
+- (BOOL) outlineView:(NSOutlineView *)outlineView isItemExpandable:(id)item
+{
+	return (0 != [[item valueForKey:@"children"] count]);
+}
+
+- (NSInteger) outlineView:(NSOutlineView *)outlineView numberOfChildrenOfItem:(id)item
+{
+	if(nil == item)
+		return [_presetsTree count];
+	else
+		return [[item valueForKey:@"children"] count];
+}
+
+- (id) outlineView:(NSOutlineView *)outlineView objectValueForTableColumn:(NSTableColumn *)tableColumn byItem:(id)item
+{
+	return [item valueForKey:[tableColumn identifier]];
+}
+
+#pragma mark NSOutlineView Delegate Methods
+
+- (BOOL) outlineView:(NSOutlineView *)outlineView isGroupItem:(id)item
+{
+	return [_presetsTree containsObject:item];
+}
+
+- (BOOL) outlineView:(NSOutlineView *)outlineView shouldSelectItem:(id)item
+{
+	return ![_presetsTree containsObject:item];
+}
+
 @end
 
 @implementation SFBAudioUnitUIWindowController (NotificationManagerMethods)
@@ -696,8 +742,6 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 											   &dataSize);
 	// Delay error checking
 	
-	[self willChangeValueForKey:@"presetsTree"];
-
 	[_presetsTree removeAllObjects];
 
 	NSMutableArray *factoryPresetsArray = [NSMutableArray array];
@@ -708,7 +752,7 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 			NSNumber *presetNumber = [NSNumber numberWithInt:preset->presetNumber];
 			NSString *presetName = [(NSString *)preset->presetName copy];
 			
-			[factoryPresetsArray addObject:[NSDictionary dictionaryWithObjectsAndKeys:presetNumber, @"presetNumber", presetName, @"presetName", [NSNull null], @"presetPath", [NSNull null], @"children", nil]];
+			[factoryPresetsArray addObject:[NSDictionary dictionaryWithObjectsAndKeys:presetNumber, @"presetNumber", presetName, @"presetName", nil]];
 
 			[presetName release];
 		}
@@ -721,18 +765,18 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 		NSLog(@"SFBAudioUnitUI: AudioUnitGetProperty(kAudioUnitProperty_FactoryPresets) failed: %i", err);	
 
 	if([factoryPresetsArray count])
-		[_presetsTree addObject:[NSDictionary dictionaryWithObjectsAndKeys:factoryPresetsArray, @"children", NSLocalizedStringFromTable(@"Factory", @"AudioUnitUI", @""), @"presetName", [NSNull null], @"presetNumber", [NSNull null], @"presetPath", nil]];
+		[_presetsTree addObject:[NSDictionary dictionaryWithObjectsAndKeys:factoryPresetsArray, @"children", NSLocalizedStringFromTable(@"Factory", @"AudioUnitUI", @""), @"presetName", nil]];
 	
 	NSArray *localPresetsArray = [self localPresets];
 	if([localPresetsArray count])
-		[_presetsTree addObject:[NSDictionary dictionaryWithObjectsAndKeys:localPresetsArray, @"children", NSLocalizedStringFromTable(@"Local", @"AudioUnitUI", @""), @"presetName", [NSNull null], @"presetNumber", [NSNull null], @"presetPath", nil]];
+		[_presetsTree addObject:[NSDictionary dictionaryWithObjectsAndKeys:localPresetsArray, @"children", NSLocalizedStringFromTable(@"Local", @"AudioUnitUI", @""), @"presetName", nil]];
 
 	NSArray *userPresetsArray = [self userPresets];
 	if([userPresetsArray count])
-		[_presetsTree addObject:[NSDictionary dictionaryWithObjectsAndKeys:userPresetsArray, @"children", NSLocalizedStringFromTable(@"User", @"AudioUnitUI", @""), @"presetName", [NSNull null], @"presetNumber", [NSNull null], @"presetPath", nil]];
+		[_presetsTree addObject:[NSDictionary dictionaryWithObjectsAndKeys:userPresetsArray, @"children", NSLocalizedStringFromTable(@"User", @"AudioUnitUI", @""), @"presetName", nil]];
 
-	[self didChangeValueForKey:@"presetsTree"];
-
+	[_presetsOutlineView reloadData];
+	
 	[factoryPresets release];
 }
 
@@ -777,7 +821,7 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 		NSString *presetName = [[path lastPathComponent] stringByDeletingPathExtension];
 		NSString *presetPath = [auPresetsPath stringByAppendingPathComponent:path];
 		
-		[result addObject:[NSDictionary dictionaryWithObjectsAndKeys:presetNumber, @"presetNumber", presetName, @"presetName", presetPath, @"presetPath", [NSNull null], @"children", nil]];
+		[result addObject:[NSDictionary dictionaryWithObjectsAndKeys:presetNumber, @"presetNumber", presetName, @"presetName", presetPath, @"presetPath", nil]];
 	}
 	
 	CFRelease(presetsFolderURL), presetsFolderURL = nil;
@@ -966,6 +1010,21 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	}
 
 	return theView;
+}
+
+- (void) presetDoubleClicked:(id)sender
+{
+	
+#pragma unused(sender)
+	
+	NSIndexSet *selectedIndexes = [_presetsOutlineView selectedRowIndexes];
+	id presetInfo = [_presetsOutlineView itemAtRow:[selectedIndexes firstIndex]];
+	
+	NSNumber *presetNumber = [presetInfo objectForKey:@"presetNumber"];
+	NSString *presetName = [presetInfo objectForKey:@"presetName"];
+	NSString *presetPath = [presetInfo objectForKey:@"presetPath"];
+	
+	[self selectPresetNumber:presetNumber presetName:presetName presetPath:presetPath];
 }
 
 @end

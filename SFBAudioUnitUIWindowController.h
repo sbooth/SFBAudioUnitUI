@@ -9,6 +9,7 @@
 @interface SFBAudioUnitUIWindowController : NSWindowController
 {
 	IBOutlet NSDrawer *_presetsDrawer;
+	IBOutlet NSOutlineView *_presetsOutlineView;
 
 @private
 	AudioUnit _audioUnit;
