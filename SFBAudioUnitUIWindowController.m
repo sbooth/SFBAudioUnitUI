@@ -394,7 +394,7 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 		NSError *error = nil;
 		BOOL dirStructureCreated = [[NSFileManager defaultManager] createDirectoryAtPath:presetPath withIntermediateDirectories:YES attributes:nil error:&error];
 		if(!dirStructureCreated) {
-			NSLog(@"SFBAudioUnitUI: Unable to create directories for %@", presetURL);
+			NSLog(@"SFBAudioUnitUI: Unable to create directories for %@ (%@)", presetURL, error);
 			return;
 		}
 	}
