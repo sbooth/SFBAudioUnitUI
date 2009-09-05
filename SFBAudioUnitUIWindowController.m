@@ -43,6 +43,7 @@ static NSString * const ImportPresetToolbarItemIdentifier				= @"org.sbooth.Audi
 - (BOOL) hasCocoaView;
 - (NSView *) getCocoaView;
 - (void) presetDoubleClicked:(id)sender;
+- (void) selectPresetNumber:(NSNumber *)presetNumber presetName:(NSString *)presetName presetPath:(NSString *)presetPath;
 @end
 
 // ========================================
@@ -405,20 +406,6 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	}
 
 	[self notifyAUListenersOfParameterChanges];
-}
-
-- (void) selectPresetNumber:(NSNumber *)presetNumber presetName:(NSString *)presetName presetPath:(NSString *)presetPath
-{
-	// NSNull indicates a preset category that cannot be double-clicked
-	if(nil == presetNumber || [NSNull null] == (id)presetNumber) {
-		NSBeep();
-		return;
-	}
-	
-	if(-1 == [presetNumber intValue])
-		[self loadCustomPresetFromURL:[NSURL fileURLWithPath:presetPath]];
-	else
-		[self loadFactoryPresetNumber:presetNumber presetName:presetName];
 }
 
 #pragma mark NSToolbar Delegate Methods
@@ -1025,6 +1012,20 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	NSString *presetPath = [presetInfo objectForKey:@"presetPath"];
 	
 	[self selectPresetNumber:presetNumber presetName:presetName presetPath:presetPath];
+}
+
+- (void) selectPresetNumber:(NSNumber *)presetNumber presetName:(NSString *)presetName presetPath:(NSString *)presetPath
+{
+	// nil indicates a preset category that cannot be double-clicked
+	if(nil == presetNumber) {
+		NSBeep();
+		return;
+	}
+	
+	if(-1 == [presetNumber intValue])
+		[self loadCustomPresetFromURL:[NSURL fileURLWithPath:presetPath]];
+	else
+		[self loadFactoryPresetNumber:presetNumber presetName:presetName];
 }
 
 @end

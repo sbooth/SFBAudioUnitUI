@@ -46,7 +46,4 @@
 - (void) loadCustomPresetFromURL:(NSURL *)presetURL;
 - (void) saveCustomPresetToURL:(NSURL *)presetURL presetName:(NSString *)presetName;
 
-// Not generally used
-- (void) selectPresetNumber:(NSNumber *)presetNumber presetName:(NSString *)presetName presetPath:(NSString *)presetPath;
-
 @end
