@@ -426,9 +426,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 		NSString *imagePath = [myBundle pathForResource:@"ToggleAUPresetDrawerToolbarImage" ofType:@"tiff"];
 		NSImage *image = [[[NSImage alloc] initWithContentsOfFile:imagePath] autorelease];
 		
-		[toolbarItem setLabel:NSLocalizedStringFromTable(@"Presets", @"AudioUnitUI", @"")];
-		[toolbarItem setPaletteLabel:NSLocalizedStringFromTable(@"Presets", @"AudioUnitUI", @"")];
-		[toolbarItem setToolTip:NSLocalizedStringFromTable(@"Show or hide the presets drawer", @"AudioUnitUI", @"")];
+		[toolbarItem setLabel:NSLocalizedString(@"Presets", @"")];
+		[toolbarItem setPaletteLabel:NSLocalizedString(@"Presets", @"")];
+		[toolbarItem setToolTip:NSLocalizedString(@"Show or hide the presets drawer", @"")];
 		[toolbarItem setImage:image];
 		
 		[toolbarItem setTarget:_presetsDrawer];
@@ -440,9 +440,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 		NSString *imagePath = [myBundle pathForResource:@"SaveAUPresetToolbarImage" ofType:@"png"];
 		NSImage *image = [[[NSImage alloc] initWithContentsOfFile:imagePath] autorelease];
 
-		[toolbarItem setLabel:NSLocalizedStringFromTable(@"Save Preset", @"AudioUnitUI", @"")];
-		[toolbarItem setPaletteLabel:NSLocalizedStringFromTable(@"Save Preset", @"AudioUnitUI", @"")];
-		[toolbarItem setToolTip:NSLocalizedStringFromTable(@"Save the current settings as a preset", @"AudioUnitUI", @"")];
+		[toolbarItem setLabel:NSLocalizedString(@"Save Preset", @"")];
+		[toolbarItem setPaletteLabel:NSLocalizedString(@"Save Preset", @"")];
+		[toolbarItem setToolTip:NSLocalizedString(@"Save the current settings as a preset", @"")];
 		[toolbarItem setImage:image];
 
 		[toolbarItem setTarget:self];
@@ -454,9 +454,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 		NSString *imagePath = [myBundle pathForResource:@"BypassAUToolbarImage" ofType:@"png"];
 		NSImage *image = [[[NSImage alloc] initWithContentsOfFile:imagePath] autorelease];
 
-		[toolbarItem setLabel:NSLocalizedStringFromTable(@"Bypass", @"AudioUnitUI", @"")];
-		[toolbarItem setPaletteLabel:NSLocalizedStringFromTable(@"Bypass", @"AudioUnitUI", @"")];
-		[toolbarItem setToolTip:NSLocalizedStringFromTable(@"Toggle whether the AudioUnit is bypassed", @"AudioUnitUI", @"")];
+		[toolbarItem setLabel:NSLocalizedString(@"Bypass", @"")];
+		[toolbarItem setPaletteLabel:NSLocalizedString(@"Bypass", @"")];
+		[toolbarItem setToolTip:NSLocalizedString(@"Toggle whether the AudioUnit is bypassed", @"")];
 		[toolbarItem setImage:image];
 		
 		[toolbarItem setTarget:self];
@@ -468,9 +468,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 		NSString *imagePath = [myBundle pathForResource:@"ImportAUPresetToolbarImage" ofType:@"png"];
 		NSImage *image = [[[NSImage alloc] initWithContentsOfFile:imagePath] autorelease];
 
-		[toolbarItem setLabel:NSLocalizedStringFromTable(@"Import Preset", @"AudioUnitUI", @"")];
-		[toolbarItem setPaletteLabel:NSLocalizedStringFromTable(@"Import Preset", @"AudioUnitUI", @"")];
-		[toolbarItem setToolTip:NSLocalizedStringFromTable(@"Import settings from a preset file", @"AudioUnitUI", @"")];
+		[toolbarItem setLabel:NSLocalizedString(@"Import Preset", @"")];
+		[toolbarItem setPaletteLabel:NSLocalizedString(@"Import Preset", @"")];
+		[toolbarItem setToolTip:NSLocalizedString(@"Import settings from a preset file", @"")];
 		[toolbarItem setImage:image];
 		
 		[toolbarItem setTarget:self];
@@ -482,9 +482,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 		NSString *imagePath = [myBundle pathForResource:@"ExportAUPresetToolbarImage" ofType:@"png"];
 		NSImage *image = [[[NSImage alloc] initWithContentsOfFile:imagePath] autorelease];
 
-		[toolbarItem setLabel:NSLocalizedStringFromTable(@"Export Preset", @"AudioUnitUI", @"")];
-		[toolbarItem setPaletteLabel:NSLocalizedStringFromTable(@"Export Preset", @"AudioUnitUI", @"")];
-		[toolbarItem setToolTip:NSLocalizedStringFromTable(@"Export the current settings to a preset file", @"AudioUnitUI", @"")];
+		[toolbarItem setLabel:NSLocalizedString(@"Export Preset", @"")];
+		[toolbarItem setPaletteLabel:NSLocalizedString(@"Export Preset", @"")];
+		[toolbarItem setToolTip:NSLocalizedString(@"Export the current settings to a preset file", @"")];
 		[toolbarItem setImage:image];
 
 		[toolbarItem setTarget:self];
@@ -540,6 +540,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 
 - (id) outlineView:(NSOutlineView *)outlineView child:(NSInteger)index ofItem:(id)item
 {
+	
+#pragma unused(outlineView)
+
 	if(nil == item)
 		return [_presetsTree objectAtIndex:index];
 	else
@@ -548,11 +551,17 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 
 - (BOOL) outlineView:(NSOutlineView *)outlineView isItemExpandable:(id)item
 {
+	
+#pragma unused(outlineView)
+	
 	return (0 != [[item valueForKey:@"children"] count]);
 }
 
 - (NSInteger) outlineView:(NSOutlineView *)outlineView numberOfChildrenOfItem:(id)item
 {
+	
+#pragma unused(outlineView)
+	
 	if(nil == item)
 		return [_presetsTree count];
 	else
@@ -561,6 +570,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 
 - (id) outlineView:(NSOutlineView *)outlineView objectValueForTableColumn:(NSTableColumn *)tableColumn byItem:(id)item
 {
+	
+#pragma unused(outlineView)
+	
 	return [item valueForKey:[tableColumn identifier]];
 }
 
@@ -568,11 +580,17 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 
 - (BOOL) outlineView:(NSOutlineView *)outlineView isGroupItem:(id)item
 {
+	
+#pragma unused(outlineView)
+	
 	return [_presetsTree containsObject:item];
 }
 
 - (BOOL) outlineView:(NSOutlineView *)outlineView shouldSelectItem:(id)item
 {
+	
+#pragma unused(outlineView)
+	
 	return ![_presetsTree containsObject:item];
 }
 
@@ -752,15 +770,15 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 		NSLog(@"SFBAudioUnitUI: AudioUnitGetProperty(kAudioUnitProperty_FactoryPresets) failed: %i", err);	
 
 	if([factoryPresetsArray count])
-		[_presetsTree addObject:[NSDictionary dictionaryWithObjectsAndKeys:factoryPresetsArray, @"children", NSLocalizedStringFromTable(@"Factory", @"AudioUnitUI", @""), @"presetName", nil]];
+		[_presetsTree addObject:[NSDictionary dictionaryWithObjectsAndKeys:factoryPresetsArray, @"children", NSLocalizedString(@"Factory", @""), @"presetName", nil]];
 	
 	NSArray *localPresetsArray = [self localPresets];
 	if([localPresetsArray count])
-		[_presetsTree addObject:[NSDictionary dictionaryWithObjectsAndKeys:localPresetsArray, @"children", NSLocalizedStringFromTable(@"Local", @"AudioUnitUI", @""), @"presetName", nil]];
+		[_presetsTree addObject:[NSDictionary dictionaryWithObjectsAndKeys:localPresetsArray, @"children", NSLocalizedString(@"Local", @""), @"presetName", nil]];
 
 	NSArray *userPresetsArray = [self userPresets];
 	if([userPresetsArray count])
-		[_presetsTree addObject:[NSDictionary dictionaryWithObjectsAndKeys:userPresetsArray, @"children", NSLocalizedStringFromTable(@"User", @"AudioUnitUI", @""), @"presetName", nil]];
+		[_presetsTree addObject:[NSDictionary dictionaryWithObjectsAndKeys:userPresetsArray, @"children", NSLocalizedString(@"User", @""), @"presetName", nil]];
 
 	[_presetsOutlineView reloadData];
 	
