@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2009 Stephen F. Booth <me@sbooth.org>
+ *  Copyright (C) 2009 - 2011 Stephen F. Booth <me@sbooth.org>
  *  All Rights Reserved
  */
 
@@ -22,7 +22,7 @@
 		
 		// The graph will look like:
 		// Generator -> Peak Limiter -> Output
-		ComponentDescription desc;
+		AudioComponentDescription desc;
 		
 		// Set up the generator node
 		desc.componentType			= kAudioUnitType_Generator;
@@ -40,7 +40,7 @@
 		
 		// Set up the peak limiter node
 		desc.componentType			= kAudioUnitType_Effect;
-		desc.componentSubType		= kAudioUnitSubType_MatrixReverb;
+		desc.componentSubType		= kAudioUnitSubType_GraphicEQ;
 		desc.componentManufacturer	= kAudioUnitManufacturer_Apple;
 		desc.componentFlags			= 0;
 		desc.componentFlagsMask		= 0;

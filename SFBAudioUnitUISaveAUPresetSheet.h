@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007 - 2009 Stephen F. Booth <me@sbooth.org>
+ *  Copyright (C) 2007 - 2011 Stephen F. Booth <me@sbooth.org>
  *  All Rights Reserved
  */
 
@@ -10,16 +10,12 @@ enum {
 	kAudioUnitPresetDomain_Local	= 1
 };
 
-@interface SFBAudioUnitUISaveAUPresetSheet : NSObject
+@interface SFBAudioUnitUISaveAUPresetSheet : NSWindowController
 {
-	IBOutlet NSWindow *_sheet;
-
 @private
 	NSString *_presetName;
 	int _presetDomain;
 }
-
-- (NSWindow *) sheet;
 
 - (IBAction) ok:(id)sender;
 - (IBAction) cancel:(id)sender;

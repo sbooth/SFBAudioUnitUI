@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007 - 2009 Stephen F. Booth <me@sbooth.org>
+ *  Copyright (C) 2007 - 2011 Stephen F. Booth <me@sbooth.org>
  *  All Rights Reserved
  */
 
@@ -9,15 +9,7 @@
 
 - (id) init
 {
-	if((self = [super init])) {
-		BOOL result = [NSBundle loadNibNamed:@"SFBAudioUnitUISaveAUPresetSheet" owner:self];
-		if(NO == result) {
-			NSLog(@"Missing resource: \"SFBAudioUnitUISaveAUPresetSheet.nib\".");
-			[self release];
-			return nil;
-		}		
-	}
-	return self;
+	return [super initWithWindowNibName:@"SFBAudioUnitUISaveAUPresetSheet"];
 }
 
 - (void) dealloc
@@ -27,17 +19,12 @@
 	[super dealloc];
 }
 
-- (NSWindow *) sheet
-{
-	return [[_sheet retain] autorelease];
-}
-
 - (IBAction) ok:(id)sender
 {
 
 #pragma unused(sender)
 
-    [[NSApplication sharedApplication] endSheet:[self sheet] returnCode:NSOKButton];
+    [[NSApplication sharedApplication] endSheet:[self window] returnCode:NSOKButton];
 }
 
 - (IBAction) cancel:(id)sender
@@ -45,7 +32,7 @@
 
 #pragma unused(sender)
 
-    [[NSApplication sharedApplication] endSheet:[self sheet] returnCode:NSCancelButton];
+    [[NSApplication sharedApplication] endSheet:[self window] returnCode:NSCancelButton];
 }
 
 - (NSString *) presetName

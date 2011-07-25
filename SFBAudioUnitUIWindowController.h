@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007 - 2009 Stephen F. Booth <me@sbooth.org>
+ *  Copyright (C) 2007 - 2011 Stephen F. Booth <me@sbooth.org>
  *  All Rights Reserved
  */
 
@@ -8,10 +8,11 @@
 
 @interface SFBAudioUnitUIWindowController : NSWindowController
 {
-	IBOutlet NSDrawer *_presetsDrawer;
-	IBOutlet NSOutlineView *_presetsOutlineView;
-
 @private
+	NSDrawer *_presetsDrawer;
+	NSOutlineView *_presetsOutlineView;
+	NSToolbarItem *_bypassEffectToolbarItem;
+
 	AudioUnit _audioUnit;
 	AUEventListenerRef _auEventListener;
 
@@ -24,6 +25,10 @@
 	NSView *_auView;
 	NSMutableArray *_presetsTree;
 }
+
+@property (assign) IBOutlet NSDrawer * presetsDrawer;
+@property (assign) IBOutlet NSOutlineView * presetsOutlineView;
+@property (assign) IBOutlet NSToolbarItem * bypassEffectToolbarItem;
 
 // The AudioUnit to work with
 - (AudioUnit) audioUnit;

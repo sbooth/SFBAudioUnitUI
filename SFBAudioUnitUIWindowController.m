@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007 - 2009 Stephen F. Booth <me@sbooth.org>
+ *  Copyright (C) 2007 - 2011 Stephen F. Booth <me@sbooth.org>
  *  All Rights Reserved
  */
 
@@ -9,23 +9,11 @@
 #include <CoreAudioKit/CoreAudioKit.h>
 #include <AudioUnit/AUCocoaUIView.h>
 
-// ========================================
-// Toolbar item identifiers
-// ========================================
-static NSString * const AudioUnitUIToolbarIdentifier					= @"org.sbooth.AudioUnitUI.Toolbar";
-static NSString * const PresetDrawerToolbarItemIdentifier				= @"org.sbooth.AudioUnitUI.Toolbar.PresetDrawer";
-static NSString * const SavePresetToolbarItemIdentifier					= @"org.sbooth.AudioUnitUI.Toolbar.SavePreset";
-static NSString * const BypassEffectToolbarItemIdentifier				= @"org.sbooth.AudioUnitUI.Toolbar.BypassEffect";
-static NSString * const ExportPresetToolbarItemIdentifier				= @"org.sbooth.AudioUnitUI.Toolbar.ExportPreset";
-static NSString * const ImportPresetToolbarItemIdentifier				= @"org.sbooth.AudioUnitUI.Toolbar.ImportPreset";
-
 @interface SFBAudioUnitUIWindowController (NotificationManagerMethods)
 - (void) auViewFrameDidChange:(NSNotification *)notification;
 @end
 
 @interface SFBAudioUnitUIWindowController (PanelCallbacks)
-- (void) savePresetToFileSavePanelDidEnd:(NSSavePanel *)panel returnCode:(int)returnCode contextInfo:(void *)contextInfo;
-- (void) loadPresetFromFileOpenPanelDidEnd:(NSOpenPanel *)panel returnCode:(int)returnCode contextInfo:(void *)contextInfo;
 - (void) savePresetSaveAUPresetSheetDidEnd:(NSWindow *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
 @end
 
@@ -73,6 +61,10 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 
 @implementation SFBAudioUnitUIWindowController
 
+@synthesize presetsDrawer = _presetsDrawer;
+@synthesize presetsOutlineView = _presetsOutlineView;
+@synthesize bypassEffectToolbarItem = _bypassEffectToolbarItem;
+
 - (id) init
 {
 	if((self = [super initWithWindowNibName:@"SFBAudioUnitUIWindow"])) {
@@ -119,16 +111,8 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	[super dealloc];
 }
 
-- (void) awakeFromNib
+- (void) windowDidLoad
 {
-	// Setup the toolbar
-    NSToolbar *toolbar = [[NSToolbar alloc] initWithIdentifier:AudioUnitUIToolbarIdentifier];
-    
-    [toolbar setAllowsUserCustomization:NO];
-    [toolbar setDelegate:self];
-	
-    [[self window] setToolbar:[toolbar autorelease]];
-	
 	// Set up the presets outline view
 	[_presetsOutlineView setTarget:self];
 	[_presetsOutlineView setAction:NULL];
@@ -144,7 +128,7 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 {
 	NSParameterAssert(NULL != audioUnit);
 	
-	if(audioUnit == [self audioUnit])
+	if(audioUnit == _audioUnit)
 		return;
 	
 	// Unregister for all notifications and AUEvents for the current AudioUnit
@@ -208,7 +192,7 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	
 	[saveAUPresetSheet setPresetName:_auPresentPresetName];
 	
-	[[NSApplication sharedApplication] beginSheet:[saveAUPresetSheet sheet] 
+	[[NSApplication sharedApplication] beginSheet:[saveAUPresetSheet window] 
 								   modalForWindow:[self window] 
 									modalDelegate:self 
 								   didEndSelector:@selector(savePresetSaveAUPresetSheetDidEnd:returnCode:contextInfo:) 
@@ -223,7 +207,7 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	UInt32 bypassEffect = NO;
 	UInt32 dataSize = sizeof(bypassEffect);
 	
-	ComponentResult err = AudioUnitGetProperty([self audioUnit], 
+	ComponentResult err = AudioUnitGetProperty(_audioUnit, 
 											   kAudioUnitProperty_BypassEffect,
 											   kAudioUnitScope_Global, 
 											   0, 
@@ -234,7 +218,7 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	
 	bypassEffect = ! bypassEffect;
 	
-	err = AudioUnitSetProperty([self audioUnit], 
+	err = AudioUnitSetProperty(_audioUnit, 
 							   kAudioUnitProperty_BypassEffect,
 							   kAudioUnitScope_Global, 
 							   0, 
@@ -254,13 +238,11 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	NSSavePanel *savePanel = [NSSavePanel savePanel];
 	
 	[savePanel setAllowedFileTypes:[NSArray arrayWithObject:@"aupreset"]];
-	
-	[savePanel beginSheetForDirectory:nil 
-								 file:nil
-					   modalForWindow:[self window]
-						modalDelegate:self
-					   didEndSelector:@selector(savePresetToFileSavePanelDidEnd:returnCode:contextInfo:)
-						  contextInfo:nil];
+
+	[savePanel beginSheetModalForWindow:[self window] completionHandler:^(NSInteger result){
+		if(NSFileHandlingPanelOKButton == result)
+			[self saveCustomPresetToURL:[savePanel URL] presetName:nil];
+	}];
 }
 
 - (IBAction) loadPresetFromFile:(id)sender
@@ -272,14 +254,13 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	
 	[openPanel setCanChooseFiles:YES];
 	[openPanel setCanChooseDirectories:NO];
-	
-	[openPanel beginSheetForDirectory:nil 
-								 file:nil
-								types:[NSArray arrayWithObject:@"aupreset"]
-					   modalForWindow:[self window]
-						modalDelegate:self
-					   didEndSelector:@selector(loadPresetFromFileOpenPanelDidEnd:returnCode:contextInfo:)
-						  contextInfo:nil];	
+	[openPanel setAllowsMultipleSelection:NO];
+	[openPanel setAllowedFileTypes:[NSArray arrayWithObject:@"aupreset"]];
+
+	[openPanel beginSheetModalForWindow:[self window] completionHandler:^(NSInteger result){
+		if(NSFileHandlingPanelOKButton == result)
+			[self loadCustomPresetFromURL:[[openPanel URLs] lastObject]];
+	}];
 }
 
 - (void) loadFactoryPresetNumber:(NSNumber *)presetNumber presetName:(NSString *)presetName
@@ -291,7 +272,7 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	preset.presetNumber = (SInt32)[presetNumber intValue];
 	preset.presetName = (CFStringRef)presetName;
 	
-	ComponentResult err = AudioUnitSetProperty([self audioUnit], 
+	ComponentResult err = AudioUnitSetProperty(_audioUnit, 
 											   kAudioUnitProperty_PresentPreset,
 											   kAudioUnitScope_Global, 
 											   0, 
@@ -325,7 +306,7 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 														 errorDescription:&errorString];
 	
 	if(nil != classInfoPlist) {
-		ComponentResult err = AudioUnitSetProperty([self audioUnit],
+		ComponentResult err = AudioUnitSetProperty(_audioUnit,
 												   kAudioUnitProperty_ClassInfo, 
 												   kAudioUnitScope_Global, 
 												   0, 
@@ -354,7 +335,7 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	preset.presetNumber = -1;
 	preset.presetName = (CFStringRef)presetName;
 	
-	ComponentResult err = AudioUnitSetProperty([self audioUnit], 
+	ComponentResult err = AudioUnitSetProperty(_audioUnit, 
 											   kAudioUnitProperty_PresentPreset,
 											   kAudioUnitScope_Global, 
 											   0, 
@@ -368,7 +349,7 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	id classInfoPlist = NULL;
 	UInt32 dataSize = sizeof(classInfoPlist);
 	
-	err = AudioUnitGetProperty([self audioUnit],
+	err = AudioUnitGetProperty(_audioUnit,
 							   kAudioUnitProperty_ClassInfo, 
 							   kAudioUnitScope_Global, 
 							   0, 
@@ -406,134 +387,6 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	}
 
 	[self notifyAUListenersOfParameterChanges];
-}
-
-#pragma mark NSToolbar Delegate Methods
-
-- (NSToolbarItem *) toolbar:(NSToolbar *)toolbar itemForItemIdentifier:(NSString *)itemIdentifier willBeInsertedIntoToolbar:(BOOL)flag 
-{
-
-#pragma unused(toolbar)
-#pragma unused(flag)
-
-    NSToolbarItem *toolbarItem = nil;
-    
-	NSBundle *myBundle = [NSBundle bundleForClass:[self class]];
-	
-    if([itemIdentifier isEqualToString:PresetDrawerToolbarItemIdentifier]) {
-        toolbarItem = [[[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier] autorelease];
-
-		NSString *imagePath = [myBundle pathForResource:@"ToggleAUPresetDrawerToolbarImage" ofType:@"tiff"];
-		NSImage *image = [[[NSImage alloc] initWithContentsOfFile:imagePath] autorelease];
-		
-		[toolbarItem setLabel:NSLocalizedString(@"Presets", @"")];
-		[toolbarItem setPaletteLabel:NSLocalizedString(@"Presets", @"")];
-		[toolbarItem setToolTip:NSLocalizedString(@"Show or hide the presets drawer", @"")];
-		[toolbarItem setImage:image];
-		
-		[toolbarItem setTarget:_presetsDrawer];
-		[toolbarItem setAction:@selector(toggle:)];
-	}
-    else if([itemIdentifier isEqualToString:SavePresetToolbarItemIdentifier]) {
-        toolbarItem = [[[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier] autorelease];
-
-		NSString *imagePath = [myBundle pathForResource:@"SaveAUPresetToolbarImage" ofType:@"png"];
-		NSImage *image = [[[NSImage alloc] initWithContentsOfFile:imagePath] autorelease];
-
-		[toolbarItem setLabel:NSLocalizedString(@"Save Preset", @"")];
-		[toolbarItem setPaletteLabel:NSLocalizedString(@"Save Preset", @"")];
-		[toolbarItem setToolTip:NSLocalizedString(@"Save the current settings as a preset", @"")];
-		[toolbarItem setImage:image];
-
-		[toolbarItem setTarget:self];
-		[toolbarItem setAction:@selector(savePreset:)];
-	}
-	else if([itemIdentifier isEqualToString:BypassEffectToolbarItemIdentifier]) {
-        toolbarItem = [[[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier] autorelease];
-
-		NSString *imagePath = [myBundle pathForResource:@"BypassAUToolbarImage" ofType:@"png"];
-		NSImage *image = [[[NSImage alloc] initWithContentsOfFile:imagePath] autorelease];
-
-		[toolbarItem setLabel:NSLocalizedString(@"Bypass", @"")];
-		[toolbarItem setPaletteLabel:NSLocalizedString(@"Bypass", @"")];
-		[toolbarItem setToolTip:NSLocalizedString(@"Toggle whether the AudioUnit is bypassed", @"")];
-		[toolbarItem setImage:image];
-		
-		[toolbarItem setTarget:self];
-		[toolbarItem setAction:@selector(toggleBypassEffect:)];
-	}
-	else if([itemIdentifier isEqualToString:ImportPresetToolbarItemIdentifier]) {
-        toolbarItem = [[[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier] autorelease];
-
-		NSString *imagePath = [myBundle pathForResource:@"ImportAUPresetToolbarImage" ofType:@"png"];
-		NSImage *image = [[[NSImage alloc] initWithContentsOfFile:imagePath] autorelease];
-
-		[toolbarItem setLabel:NSLocalizedString(@"Import Preset", @"")];
-		[toolbarItem setPaletteLabel:NSLocalizedString(@"Import Preset", @"")];
-		[toolbarItem setToolTip:NSLocalizedString(@"Import settings from a preset file", @"")];
-		[toolbarItem setImage:image];
-		
-		[toolbarItem setTarget:self];
-		[toolbarItem setAction:@selector(loadPresetFromFile:)];
-	}
-    else if([itemIdentifier isEqualToString:ExportPresetToolbarItemIdentifier]) {
-        toolbarItem = [[[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier] autorelease];
-
-		NSString *imagePath = [myBundle pathForResource:@"ExportAUPresetToolbarImage" ofType:@"png"];
-		NSImage *image = [[[NSImage alloc] initWithContentsOfFile:imagePath] autorelease];
-
-		[toolbarItem setLabel:NSLocalizedString(@"Export Preset", @"")];
-		[toolbarItem setPaletteLabel:NSLocalizedString(@"Export Preset", @"")];
-		[toolbarItem setToolTip:NSLocalizedString(@"Export the current settings to a preset file", @"")];
-		[toolbarItem setImage:image];
-
-		[toolbarItem setTarget:self];
-		[toolbarItem setAction:@selector(savePresetToFile:)];
-	}
-	
-    return toolbarItem;
-}
-
-- (NSArray *) toolbarDefaultItemIdentifiers:(NSToolbar *)toolbar 
-{
-
-#pragma unused(toolbar)
-
-    return [NSArray arrayWithObjects:
-			PresetDrawerToolbarItemIdentifier, 
-			SavePresetToolbarItemIdentifier, 
-			NSToolbarSpaceItemIdentifier, 
-			BypassEffectToolbarItemIdentifier,
-			NSToolbarFlexibleSpaceItemIdentifier,
-			ImportPresetToolbarItemIdentifier, 
-			ExportPresetToolbarItemIdentifier, 
-			nil];
-}
-
-- (NSArray *) toolbarAllowedItemIdentifiers:(NSToolbar *) toolbar 
-{
-
-#pragma unused(toolbar)
-
-    return [NSArray arrayWithObjects:
-			PresetDrawerToolbarItemIdentifier, 
-			SavePresetToolbarItemIdentifier, 
-			BypassEffectToolbarItemIdentifier,
-			ImportPresetToolbarItemIdentifier, 
-			ExportPresetToolbarItemIdentifier, 
-			NSToolbarSeparatorItemIdentifier, 
-			NSToolbarSpaceItemIdentifier, 
-			NSToolbarFlexibleSpaceItemIdentifier,
-			NSToolbarCustomizeToolbarItemIdentifier, 
-			nil];
-}
-
-- (NSArray *) toolbarSelectableItemIdentifiers:(NSToolbar *)toolbar
-{
-
-#pragma unused(toolbar)
-
-    return [NSArray arrayWithObject:BypassEffectToolbarItemIdentifier];
 }
 
 #pragma mark NSOutlineView Data Source Methods
@@ -633,28 +486,6 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 
 @implementation SFBAudioUnitUIWindowController (PanelCallbacks)
 
-- (void) savePresetToFileSavePanelDidEnd:(NSSavePanel *)panel returnCode:(int)returnCode contextInfo:(void *)contextInfo
-{
-
-#pragma unused(contextInfo)
-
-	if(NSCancelButton == returnCode)
-		return;
-
-	[self saveCustomPresetToURL:[panel URL] presetName:nil];
-}
-
-- (void) loadPresetFromFileOpenPanelDidEnd:(NSOpenPanel *)panel returnCode:(int)returnCode contextInfo:(void *)contextInfo
-{
-
-#pragma unused(contextInfo)
-
-	if(NSCancelButton == returnCode)
-		return;
-	
-	[self loadCustomPresetFromURL:[[panel URLs] lastObject]];
-}
-
 - (void) savePresetSaveAUPresetSheetDidEnd:(NSWindow *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
 {
 	SFBAudioUnitUISaveAUPresetSheet *saveAUPresetSheet = (SFBAudioUnitUISaveAUPresetSheet *)contextInfo;
@@ -702,36 +533,27 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	[_auNameAndManufacturer release], _auNameAndManufacturer = nil;
 	[_auManufacturer release], _auManufacturer = nil;
 	[_auName release], _auName = nil;
-	
-	ComponentDescription cd;
-	Handle componentNameHandle = NewHandle(sizeof(void *));
-	if(NULL == componentNameHandle) {
-		NSLog(@"SFBAudioUnitUI: NewHandle failed");	
+
+	OSStatus result = AudioComponentCopyName((AudioComponent)_audioUnit, (CFStringRef *)&_auNameAndManufacturer);
+	if(noErr != result) {
+		NSLog(@"SFBAudioUnitUI: AudioComponentCopyName failed: %i", result);	
 		return;
 	}
 
-	OSErr err = GetComponentInfo((Component)[self audioUnit], &cd, componentNameHandle, NULL, NULL);
-	if(noErr == err) {
-		_auNameAndManufacturer = (NSString *)CFStringCreateWithPascalString(kCFAllocatorDefault, (ConstStr255Param)(*componentNameHandle), kCFStringEncodingUTF8);
-		NSUInteger colonIndex = [_auNameAndManufacturer rangeOfString:@":" options:NSLiteralSearch].location;
-		if(NSNotFound != colonIndex) {
-			_auManufacturer = [[_auNameAndManufacturer substringToIndex:colonIndex] copy];
-			
-			// Skip colon
+	NSUInteger colonIndex = [_auNameAndManufacturer rangeOfString:@":" options:NSLiteralSearch].location;
+	if(NSNotFound != colonIndex) {
+		_auManufacturer = [[_auNameAndManufacturer substringToIndex:colonIndex] copy];
+		
+		// Skip colon
+		++colonIndex;
+		
+		// Skip whitespace
+		NSCharacterSet *whitespaceCharacters = [NSCharacterSet whitespaceCharacterSet];
+		while([whitespaceCharacters characterIsMember:[_auNameAndManufacturer characterAtIndex:colonIndex]])
 			++colonIndex;
-			
-			// Skip whitespace
-			NSCharacterSet *whitespaceCharacters = [NSCharacterSet whitespaceCharacterSet];
-			while([whitespaceCharacters characterIsMember:[_auNameAndManufacturer characterAtIndex:colonIndex]])
-				++colonIndex;
-			
-			_auName = [[_auNameAndManufacturer substringFromIndex:colonIndex] copy];			
-		}
+		
+		_auName = [[_auNameAndManufacturer substringFromIndex:colonIndex] copy];			
 	}
-	else
-		NSLog(@"SFBAudioUnitUI: GetComponentInfo failed: %i", err);
-	
-	DisposeHandle(componentNameHandle);
 }
 
 - (void) scanPresets
@@ -739,7 +561,7 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	NSArray		*factoryPresets		= nil;
 	UInt32		dataSize			= sizeof(factoryPresets);
 	
-	ComponentResult err = AudioUnitGetProperty([self audioUnit], 
+	ComponentResult err = AudioUnitGetProperty(_audioUnit, 
 											   kAudioUnitProperty_FactoryPresets,
 											   kAudioUnitScope_Global, 
 											   0, 
@@ -842,7 +664,7 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	AUPreset preset;
 	UInt32 dataSize = sizeof(preset);
 	
-	ComponentResult err = AudioUnitGetProperty([self audioUnit], 
+	ComponentResult err = AudioUnitGetProperty(_audioUnit, 
 											   kAudioUnitProperty_PresentPreset,
 											   kAudioUnitScope_Global, 
 											   0, 
@@ -866,7 +688,7 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	UInt32 bypassEffect = NO;
 	UInt32 dataSize = sizeof(bypassEffect);
 	
-	ComponentResult err = AudioUnitGetProperty([self audioUnit], 
+	ComponentResult err = AudioUnitGetProperty(_audioUnit, 
 											   kAudioUnitProperty_BypassEffect,
 											   kAudioUnitScope_Global, 
 											   0, 
@@ -874,9 +696,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 											   &dataSize);
 	if(noErr != err)
 		NSLog(@"SFBAudioUnitUI: AudioUnitGetProperty(kAudioUnitProperty_BypassEffect) failed: %i", err);	
-		
+
 	if(bypassEffect)
-		[[[self window] toolbar] setSelectedItemIdentifier:BypassEffectToolbarItemIdentifier];
+		[[[self window] toolbar] setSelectedItemIdentifier:[_bypassEffectToolbarItem itemIdentifier]];
 	else
 		[[[self window] toolbar] setSelectedItemIdentifier:nil];
 }
@@ -884,7 +706,7 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 - (void) notifyAUListenersOfParameterChanges
 {
 	AudioUnitParameter changedUnit;
-	changedUnit.mAudioUnit = [self audioUnit];
+	changedUnit.mAudioUnit = _audioUnit;
 	changedUnit.mParameterID = kAUParameterListener_AnyParameter;
 
 	OSStatus err = AUParameterListenerNotify(NULL, NULL, &changedUnit);
@@ -903,9 +725,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
     propertyEvent.mArgument.mProperty.mScope = kAudioUnitScope_Global;
     propertyEvent.mArgument.mProperty.mElement = 0;
 	
-	OSStatus err = AUEventListenerAddEventType(_auEventListener, NULL, &propertyEvent);	
-	if(noErr != err)
-		NSLog(@"SFBAudioUnitUI: AUEventListenerAddEventType(kAudioUnitProperty_BypassEffect) failed: %i", err);	
+	OSStatus result = AUEventListenerAddEventType(_auEventListener, NULL, &propertyEvent);	
+	if(noErr != result)
+		NSLog(@"SFBAudioUnitUI: AUEventListenerAddEventType(kAudioUnitProperty_BypassEffect) failed: %i", result);	
 
     propertyEvent.mEventType = kAudioUnitEvent_PropertyChange;
     propertyEvent.mArgument.mProperty.mAudioUnit = audioUnit;
@@ -913,9 +735,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
     propertyEvent.mArgument.mProperty.mScope = kAudioUnitScope_Global;
     propertyEvent.mArgument.mProperty.mElement = 0;
 	
-	err = AUEventListenerAddEventType(_auEventListener, NULL, &propertyEvent);	
-	if(noErr != err)
-		NSLog(@"SFBAudioUnitUI: AUEventListenerAddEventType(kAudioUnitProperty_PresentPreset) failed: %i", err);	
+	result = AUEventListenerAddEventType(_auEventListener, NULL, &propertyEvent);	
+	if(noErr != result)
+		NSLog(@"SFBAudioUnitUI: AUEventListenerAddEventType(kAudioUnitProperty_PresentPreset) failed: %i", result);	
 }
 
 - (void) stopListeningForParameterChangesOnAudioUnit:(AudioUnit)audioUnit
@@ -929,9 +751,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
     propertyEvent.mArgument.mProperty.mScope = kAudioUnitScope_Global;
     propertyEvent.mArgument.mProperty.mElement = 0;
 	
-	OSStatus err = AUEventListenerRemoveEventType(_auEventListener, NULL, &propertyEvent);	
-	if(noErr != err)
-		NSLog(@"SFBAudioUnitUI: AUEventListenerRemoveEventType(kAudioUnitProperty_BypassEffect) failed: %i", err);	
+	OSStatus result = AUEventListenerRemoveEventType(_auEventListener, NULL, &propertyEvent);	
+	if(noErr != result)
+		NSLog(@"SFBAudioUnitUI: AUEventListenerRemoveEventType(kAudioUnitProperty_BypassEffect) failed: %i", result);	
 	
     propertyEvent.mEventType = kAudioUnitEvent_PropertyChange;
     propertyEvent.mArgument.mProperty.mAudioUnit = audioUnit;
@@ -939,9 +761,9 @@ myAUEventListenerProc(void						*inCallbackRefCon,
     propertyEvent.mArgument.mProperty.mScope = kAudioUnitScope_Global;
     propertyEvent.mArgument.mProperty.mElement = 0;
 	
-	err = AUEventListenerRemoveEventType(_auEventListener, NULL, &propertyEvent);	
-	if(noErr != err)
-		NSLog(@"SFBAudioUnitUI: AUEventListenerRemoveEventType(kAudioUnitProperty_PresentPreset) failed: %i", err);	
+	result = AUEventListenerRemoveEventType(_auEventListener, NULL, &propertyEvent);	
+	if(noErr != result)
+		NSLog(@"SFBAudioUnitUI: AUEventListenerRemoveEventType(kAudioUnitProperty_PresentPreset) failed: %i", result);	
 }
 
 - (BOOL) hasCocoaView
@@ -949,7 +771,7 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	UInt32 dataSize = 0;
 	Boolean writable = 0;
 	
-	ComponentResult err = AudioUnitGetPropertyInfo([self audioUnit],
+	ComponentResult err = AudioUnitGetPropertyInfo(_audioUnit,
 												   kAudioUnitProperty_CocoaUI, 
 												   kAudioUnitScope_Global,
 												   0, 
@@ -965,7 +787,7 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	UInt32 dataSize = 0;
 	Boolean writable = 0;
 
-	ComponentResult err = AudioUnitGetPropertyInfo([self audioUnit],
+	ComponentResult err = AudioUnitGetPropertyInfo(_audioUnit,
 												   kAudioUnitProperty_CocoaUI, 
 												   kAudioUnitScope_Global, 
 												   0,
@@ -978,8 +800,8 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	}
 
 	// If we have the property, then allocate storage for it.
-	AudioUnitCocoaViewInfo *cocoaViewInfo = (AudioUnitCocoaViewInfo*) malloc(dataSize);
-	err = AudioUnitGetProperty([self audioUnit], 
+	AudioUnitCocoaViewInfo *cocoaViewInfo = (AudioUnitCocoaViewInfo *) malloc(dataSize);
+	err = AudioUnitGetProperty(_audioUnit, 
 							   kAudioUnitProperty_CocoaUI, 
 							   kAudioUnitScope_Global, 
 							   0, 
@@ -994,15 +816,12 @@ myAUEventListenerProc(void						*inCallbackRefCon,
 	// Extract useful data.
 	unsigned	numberOfClasses		= (dataSize - sizeof(CFURLRef)) / sizeof(CFStringRef);
 	NSString	*viewClassName		= (NSString *)(cocoaViewInfo->mCocoaAUViewClass[0]);
-	CFStringRef	path				= CFURLCopyPath(cocoaViewInfo->mCocoaAUViewBundleLocation);
-	NSBundle	*viewBundle			= [NSBundle bundleWithPath:(NSString *)path];
+	NSBundle	*viewBundle			= [NSBundle bundleWithURL:(NSURL *)cocoaViewInfo->mCocoaAUViewBundleLocation];
 	Class		viewClass			= [viewBundle classNamed:viewClassName];
 
-	CFRelease(path), path = nil;
-	
 	if([viewClass conformsToProtocol:@protocol(AUCocoaUIBase)]) {
 		id factory = [[[viewClass alloc] init] autorelease];
-		theView = [factory uiViewForAudioUnit:[self audioUnit] withSize:NSZeroSize];
+		theView = [factory uiViewForAudioUnit:_audioUnit withSize:NSZeroSize];
 	}
 
 	// Delete the cocoa view info stuff.
